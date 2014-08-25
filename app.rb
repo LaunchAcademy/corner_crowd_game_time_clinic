@@ -32,29 +32,33 @@ def scores
   ]
 end
 
+# Finds a team hash with a given value for name key in the array of teams
 def find_team(teams, name)
   teams.find do |team|
     team[:name] == name
   end
 end
 
-get '/leaderboard' do
-  @teams = [
-    { name: 'Steelers', wins: 0, losses: 0 },
-    { name: 'Patriots', wins: 0, losses: 0 },
-    { name: 'Colts', wins: 0, losses: 0 },
-    { name: 'Broncos', wins: 0, losses: 0 }
-  ]
+# Creates a new team hash with 0 wins and 0 losses
+def build_team(teams, name)
+  team = { name: name, wins: 0, losses: 0 }
+  teams << team
+  team
+end
+
+def find_or_build_team(teams, name)
+  # Try to find the team with the matching name.
+  # Build a new team if one is not found.
+  find_team(teams, name) || build_team(teams, name)
+end
+
+def leaderboard
+  teams = []
 
   scores.each do |score|
-    # find or create hash for home team
-    home_team = find_team(@teams, score[:home_team])
+    home_team = find_or_build_team(teams, score[:home_team])
+    away_team = find_or_build_team(teams, score[:away_team])
 
-    # find or create hash for away team
-    away_team = find_team(@teams, score[:away_team])
-
-    # figure out who won, increment their value for wins
-    # figure out who list, increment their value for losses
     if score[:home_score] > score[:away_score]
       home_team[:wins] += 1
       away_team[:losses] += 1
@@ -64,5 +68,16 @@ get '/leaderboard' do
     end
   end
 
-  erb :leaderboard
+  teams
+end
+
+get '/leaderboard' do
+  teams = leaderboard
+
+  # Sort the teams first by most wins, then by least losses
+  sorted_teams = teams.sort_by do |team|
+    [-team[:wins], team[:losses]]
+  end
+
+  erb :leaderboard, locals: { teams: sorted_teams }
 end
