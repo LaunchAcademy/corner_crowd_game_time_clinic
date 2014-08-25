@@ -1,8 +1,10 @@
 require 'sinatra'
 require 'sinatra/reloader'
 
-get '/leaderboard' do
-  scores = [
+require 'pry'
+
+def scores
+  [
     {
       home_team: "Patriots",
       away_team: "Broncos",
@@ -28,12 +30,39 @@ get '/leaderboard' do
       away_score: 21
     }
   ]
+end
 
+def find_team(teams, name)
+  teams.find do |team|
+    team[:name] == name
+  end
+end
+
+get '/leaderboard' do
   @teams = [
-    { name: 'Steelers', wins: 3, losses: 2 },
-    { name: 'Patriots', wins: 2, losses: 5 },
-    { name: 'Colts', wins: 6, losses: 8 }
+    { name: 'Steelers', wins: 0, losses: 0 },
+    { name: 'Patriots', wins: 0, losses: 0 },
+    { name: 'Colts', wins: 0, losses: 0 },
+    { name: 'Broncos', wins: 0, losses: 0 }
   ]
+
+  scores.each do |score|
+    # find or create hash for home team
+    home_team = find_team(@teams, score[:home_team])
+
+    # find or create hash for away team
+    away_team = find_team(@teams, score[:away_team])
+
+    # figure out who won, increment their value for wins
+    # figure out who list, increment their value for losses
+    if score[:home_score] > score[:away_score]
+      home_team[:wins] += 1
+      away_team[:losses] += 1
+    else
+      away_team[:wins] += 1
+      home_team[:losses] += 1
+    end
+  end
 
   erb :leaderboard
 end
